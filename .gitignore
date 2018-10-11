@@ -1,0 +1,12 @@
+bin/
+bin/*
+boots-misobuyer/
+boots-misobuyer/*.csv
+config.properties
+*.model
+training.arff
+*.arff
+*.csv
+*.log
+*.others
+*.xlsx
