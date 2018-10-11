@@ -76,8 +76,8 @@ public class ResultsHATrading
 	private String outputFilename = "clearedTrades.data";
 	
 	private double N = 0.0;
-	private int HA = 48;
-	private int ITEMS = (2*HA)+1+2; // 1 for Broker name, 2 for Balancing Mkt transaction
+	private int HA = 24;
+	private int ITEMS = (4*HA)+1+2; // 1 for Broker name, 2 for Balancing Mkt transaction
 	private int n = 0;
 	private boolean firstTime = true;
 	private String SPOT = "SPOT";
