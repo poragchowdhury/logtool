@@ -62,7 +62,7 @@ import org.powertac.logtool.ifc.Analyzer;
  * 
  * Usage: MktPriceStats [--no-headers] state-log-filename output-data-filename
  * 
- * @author John Collins
+ * @author Porag Chowdhurys
  */
 public class ResultsHATrading
 {
@@ -76,8 +76,8 @@ public class ResultsHATrading
 	private String outputFilename = "clearedTrades.data";
 	
 	private double N = 0.0;
-	private int HA = 24;
-	private int ITEMS = (2*HA)+1+2;
+	private int HA = 48;
+	private int ITEMS = (2*HA)+1+2; // 1 for Broker name, 2 for Balancing Mkt transaction
 	private int n = 0;
 	private boolean firstTime = true;
 	private String SPOT = "SPOT";
@@ -110,8 +110,10 @@ public class ResultsHATrading
 			File file = new File(inputFilename); 
 			Scanner sc = new Scanner(file); 
 			String bName = "";
-			String bPrice = "";
-			String bMWh = "";
+			String bDrPrice = "";
+			String bDrMWh = "";
+			String bCrPrice = "";
+			String bCrMWh = "";
 			
 			// Start reading the file and CALCULATE AVG
 			int ts = 0;
@@ -145,25 +147,41 @@ public class ResultsHATrading
 						double tdemand = 0.0;
 						for(int j=0;j<HA;j++)
 						{
-							double pr = 0.0;
-							double mwh = 0.0;
+							double drpr = 0.0;
+							double drmwh = 0.0;
+							double crpr = 0.0;
+							double crmwh = 0.0;
 							
-							// get price
-							bPrice = arrVals[index];
+							// get price debit
+							bDrPrice = arrVals[index];
 							index++;
-							if(!bPrice.equals("")){
-								pr = Double.parseDouble(bPrice);
+							if(!bDrPrice.equals("")){
+								drpr = Double.parseDouble(bDrPrice);
 							}
 
-							// get Mwh    				
-							bMWh = arrVals[index];
+							// get Mwh debit    				
+							bDrMWh = arrVals[index];
 							index++;
-							if(!bMWh.equals("")){
-								mwh = Double.parseDouble(bMWh);
+							if(!bDrMWh.equals("")){
+								drmwh = Double.parseDouble(bDrMWh);
+							}
+							
+							// get price credit
+							bCrPrice = arrVals[index];
+							index++;
+							if(!bCrPrice.equals("")){
+								crpr = Double.parseDouble(bCrPrice);
+							}
+
+							// get Mwh credit    				
+							bCrMWh = arrVals[index];
+							index++;
+							if(!bCrMWh.equals("")){
+								crmwh = Double.parseDouble(bCrMWh);
 							}
 							if(j > 0){
-								cost += pr*mwh;
-								tdemand +=mwh;
+								cost = cost + (drpr*drmwh) - (crpr*crmwh);
+								tdemand = tdemand + drmwh - crmwh;
 							}
 							
 						} // Finished one timeslot for a broker
