@@ -179,17 +179,16 @@ public class ResultsHATrading
 							if(!bCrMWh.equals("")){
 								crmwh = Double.parseDouble(bCrMWh);
 							}
-							if(j > 0){
+							
+							//if(j > 0){ // Restrict 0 HourAhead auctions
 								cost = cost + (drpr*drmwh) + (crpr*crmwh);
 								tdemand = tdemand + drmwh - crmwh;
-							}
+							//}
 							
 						} // Finished one timeslot for a broker
 						
-						// Special case for my mistake
 						double balV = 0;
 						double balp = 0;
-						
 						
 						String balcost = arrVals[index];
 						index++;
@@ -201,6 +200,7 @@ public class ResultsHATrading
 						index++;
 						if(!balVol.equals("") && !!balVol.equalsIgnoreCase("NaN")){
 							balV = Double.parseDouble(balVol);
+							// changing the direction as deficit is negative in balancing market
 							balV *=-1;
 						}
 						
@@ -215,9 +215,10 @@ public class ResultsHATrading
 						else
 						{
 							// Set broker cost to avg broker cost
-							brokerCostOneTS[i] = 0;
-							if(!bName.equalsIgnoreCase("default broker"))
+							if(tdemand != 0 && !bName.equalsIgnoreCase("default broker"))
 								System.out.println(bName + " Surplus demand at ts " + ts + " tdemand " + tdemand + " cost " + cost);
+							
+							brokerCostOneTS[i] = 0;
 						}
 						
 						if(SPOT.equalsIgnoreCase(bName)){
