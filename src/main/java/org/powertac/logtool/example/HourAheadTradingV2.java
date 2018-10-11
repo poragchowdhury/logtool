@@ -236,10 +236,7 @@ implements Analyzer
 				avgBrCrVol[k] = 0.0;
 			}
 			// Bal Tx
-			double avgBalP = 0;
-			if(avgBalVol != 0)
-				avgBalP = avgBal/avgBalVol;
-			printVals(output, avgBalP);
+			printVals(output, avgBal);
 			printVals(output, avgBalVol);
 			printVals(output, totalImbalance);
 			//reset bal
