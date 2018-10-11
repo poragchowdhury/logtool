@@ -214,7 +214,10 @@ public class ResultsHATrading
 						}
 						else
 						{
-							System.out.println(bName + "Surplus demand at ts " + ts + " tdemand " + tdemand + " cost " + cost);
+							// Set broker cost to avg broker cost
+							brokerCostOneTS[i] = 0;
+							if(!bName.equalsIgnoreCase("default broker"))
+								System.out.println(bName + " Surplus demand at ts " + ts + " tdemand " + tdemand + " cost " + cost);
 						}
 						
 						if(SPOT.equalsIgnoreCase(bName)){
@@ -225,6 +228,8 @@ public class ResultsHATrading
 					
 					// After one TS
 					for(int l = 0; l < n; l++){
+						if(brokerCostOneTS[l] == 0)
+							brokerCostOneTS[l] = brokerCostOneTS[n-1];
 						brokerCostAllTS[l] += spotdemand*brokerCostOneTS[l];
 						brokerCostOneTS[l] = 0;
 					}

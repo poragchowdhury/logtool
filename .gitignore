@@ -1,5 +1,6 @@
 target/
 target/*
+target\classes\org\powertac\logtool\example\*.class
 bin/
 bin/*
 boots-misobuyer/
