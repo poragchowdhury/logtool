@@ -180,7 +180,7 @@ public class ResultsHATrading
 								crmwh = Double.parseDouble(bCrMWh);
 							}
 							if(j > 0){
-								cost = cost + (drpr*drmwh) - (crpr*crmwh);
+								cost = cost + (drpr*drmwh) + (crpr*crmwh);
 								tdemand = tdemand + drmwh - crmwh;
 							}
 							
@@ -204,13 +204,17 @@ public class ResultsHATrading
 							balV *=-1;
 						}
 						
-						cost+=(balp*balV);
+						cost+=balp;
 						tdemand+=balV;
 						
 						// Update the cost 
 						brokerCostOneTS[i] = cost; 
 						if(tdemand > 0){
 							brokerCostOneTS[i] /= tdemand; 
+						}
+						else
+						{
+							System.out.println(bName + "Surplus demand at ts " + ts + " tdemand " + tdemand + " cost " + cost);
 						}
 						
 						if(SPOT.equalsIgnoreCase(bName)){
