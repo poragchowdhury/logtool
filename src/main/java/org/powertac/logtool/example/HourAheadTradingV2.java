@@ -88,8 +88,8 @@ implements Analyzer
 
 	private boolean omitHeaders = false;
 	//private PrintWriter output = null;
-	private PrintWriter outputCr = null;
-	private PrintWriter outputDr = null;
+	//private PrintWriter outputCr = null;
+	private PrintWriter output = null;
 	private String dataFilename = "clearedTrades.data";
 	private double [] avgBrCr;
 	private double [] avgBrCrVol;
@@ -154,8 +154,8 @@ implements Analyzer
 		avgBrCrVol = new double[24];
 
 		try {
-			outputDr = new PrintWriter(new File(dataFilename+"Dr.csv"));
-			outputCr = new PrintWriter(new File(dataFilename+"Cr.csv"));
+			output = new PrintWriter(new File(dataFilename+"Dr.csv"));
+			//outputCr = new PrintWriter(new File(dataFilename+"Cr.csv"));
 		}
 		catch (FileNotFoundException e) {
 			log.error("Cannot open file " + dataFilename);
@@ -180,21 +180,21 @@ implements Analyzer
 
 			/*
 			// print the avg broker values
-			outputDr.format("MeanCT,");
+			output.format("MeanCT,");
 			outputCr.format("MeanCT,");
 
 			for (int i = 0; i < trades.length; i++) {
 				if (null == trades[i]) {
-					outputDr.print(delim);
-					outputDr.print(delim);
+					output.print(delim);
+					output.print(delim);
 					outputCr.print(delim);
 					outputCr.print(delim);
 				}
 				else {
 					printtofile(outputCr, delim, trades[i].getExecutionPrice());
 					printtofile(outputCr, delim, trades[i].getExecutionMWh());
-					printtofile(outputDr, delim, trades[i].getExecutionPrice());
-					printtofile(outputDr, delim, trades[i].getExecutionMWh());
+					printtofile(output, delim, trades[i].getExecutionPrice());
+					printtofile(output, delim, trades[i].getExecutionMWh());
 				}
 				delim = ",";
 			}
@@ -208,24 +208,26 @@ implements Analyzer
 				//output.println();
 			}
 			// print the avg broker values
-			outputCr.format(",AvgBroker");
-			outputDr.format(",AvgBroker");
+			//outputCr.format(",AvgBroker");
+			output.format(",AvgBroker");
 			for(int k = 0; k < 24; k++)
 			{
+				// print debit
 				if(avgBrDrVol[k] == 0)
 					avgBrDr[k] = 0;
 				else
 					avgBrDr[k] /= avgBrDrVol[k];
 
-				printVals(outputDr, avgBrDr[k]);
-				printVals(outputDr, avgBrDrVol[k]);
+				printVals(output, avgBrDr[k]);
+				printVals(output, avgBrDrVol[k]);
 
+				// print credit
 				if(avgBrCrVol[k] == 0)
 					avgBrCr[k] = 0;
 				else
 					avgBrCr[k] /= avgBrCrVol[k];
-				printVals(outputCr, avgBrCr[k]);
-				printVals(outputCr, avgBrCrVol[k]);
+				printVals(output, avgBrCr[k]);
+				printVals(output, avgBrCrVol[k]);
 				
 				// reset
 				avgBrDr[k] = 0.0;
@@ -237,21 +239,21 @@ implements Analyzer
 			double avgBalP = 0;
 			if(avgBalVol != 0)
 				avgBalP = avgBal/avgBalVol;
-			printVals(outputDr, avgBalP);
-			printVals(outputDr, avgBalVol);
-			printVals(outputDr, totalImbalance);
+			printVals(output, avgBalP);
+			printVals(output, avgBalVol);
+			printVals(output, totalImbalance);
 			//reset bal
 			avgBal = 0;
 			avgBalVol = 0;
 			totalImbalance = 0;
-			outputCr.println();
-			outputDr.println();
+			//outputCr.println();
+			output.println();
 		}
-		outputCr.println();
-		outputDr.println();
+		//outputCr.println();
+		output.println();
 
-		outputCr.close();
-		outputDr.close();
+		//outputCr.close();
+		output.close();
 
 	}
 
@@ -266,8 +268,8 @@ implements Analyzer
 		if(firstBroker)
 			deli ="";
 
-		outputCr.format(deli+"%s",broker.getUsername());
-		outputDr.format(deli+"%s",broker.getUsername());
+		//outputCr.format(deli+"%s",broker.getUsername());
+		output.format(deli+"%s",broker.getUsername());
 
 		if(tsmtx == null)
 		{
@@ -307,10 +309,10 @@ implements Analyzer
 						}
 					}
 					// Print the hourAhead transactions
-					printVals(outputDr, mtxD);
-					printVals(outputDr, mtxDVol);
-					printVals(outputCr, mtxC);
-					printVals(outputCr, mtxCVol);
+					printVals(output, mtxD);
+					printVals(output, mtxDVol);
+					printVals(output, mtxC);
+					printVals(output, mtxCVol);
 					// reset
 					mtxD = 0;
 					mtxC = 0;
@@ -323,8 +325,8 @@ implements Analyzer
 		// Now print balancing tx
 		HashMap<Integer, BalancingTransaction> tsbtx = dataBtx.get(broker);
 		if(tsbtx == null) {
-			printVals(outputDr, 0);
-			printVals(outputDr, 0);
+			printVals(output, 0);
+			printVals(output, 0);
 		}
 		else {
 			BalancingTransaction btx = tsbtx.get(ts);
@@ -334,24 +336,24 @@ implements Analyzer
 				avgBal += charge;
 				avgBalVol += vol;
 				totalImbalance += vol;
-				printVals(outputDr, charge);
-				printVals(outputDr, vol);
+				printVals(output, charge);
+				printVals(output, vol);
 				//System.out.println(broker.getUsername() + " charge " + charge + " vol " + vol);
 			}
 			else
 			{
-				printVals(outputDr, 0);
-				printVals(outputDr, 0);
+				printVals(output, 0);
+				printVals(output, 0);
 			}
 		}
 	}
 
 	public void printTSEmptyValsForBroker(){
 		for(int offset=0; offset<=23; offset++){
-			printVals(outputDr, 0);
-			printVals(outputDr, 0);
-			printVals(outputCr, 0);
-			printVals(outputCr, 0);
+			printVals(output, 0);
+			printVals(output, 0);
+			printVals(output, 0);
+			printVals(output, 0);
 		}
 	}
 
