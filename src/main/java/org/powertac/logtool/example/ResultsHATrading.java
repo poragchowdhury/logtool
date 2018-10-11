@@ -183,6 +183,7 @@ public class ResultsHATrading
 						index++;
 						if(!balVol.equals("") && !!balVol.equalsIgnoreCase("NaN")){
 							balV = Double.parseDouble(balVol);
+							balV *=-1;
 						}
 						
 						cost+=(balp*balV);
