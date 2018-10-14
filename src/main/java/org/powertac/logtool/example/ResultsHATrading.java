@@ -118,8 +118,9 @@ public class ResultsHATrading
 			// Start reading the file and CALCULATE AVG
 			int ts = 0;
 			double brokerCostAllTS[] = new double [10];
+			double brokerDemandAllTS[] = new double [10];
 			double brokerCostOneTS[] = new double [10];
-			double spotTotDemand = 0.0;
+			double brokerDemandOneTS[] = new double [10];
 			
 			while (sc.hasNextLine()){
 				String line = sc.nextLine();
@@ -133,7 +134,6 @@ public class ResultsHATrading
 					}
 					
 					int index = 0;
-					double spotdemand = 0.0;
 					for(int i = 0; i < n; i++){
 
 						// Get the broker name
@@ -180,10 +180,10 @@ public class ResultsHATrading
 								crmwh = Double.parseDouble(bCrMWh);
 							}
 							
-							//if(j > 0){ // Restrict 0 HourAhead auctions
-								cost = cost + (drpr*drmwh) + (crpr*crmwh);
-								tdemand = tdemand + drmwh - crmwh;
-							//}
+							if(j > 0){ // Restrict 0 HourAhead auctions
+								cost = cost + (drpr*Math.abs(drmwh)) + (crpr*Math.abs(crmwh));
+								tdemand = tdemand + drmwh + crmwh;
+							}
 							
 						} // Finished one timeslot for a broker
 						
@@ -200,50 +200,47 @@ public class ResultsHATrading
 						index++;
 						if(!balVol.equals("") && !!balVol.equalsIgnoreCase("NaN")){
 							balV = Double.parseDouble(balVol);
-							// changing the direction as deficit is negative in balancing market
-							balV *=-1;
 						}
 						
 						cost+=balp;
 						tdemand+=balV;
 						
 						// Update the cost 
-						brokerCostOneTS[i] = cost; 
-						if(tdemand > 0){
-							brokerCostOneTS[i] /= tdemand; 
+						brokerCostOneTS[i] = 0; 
+						if(tdemand != 0){
+							brokerCostOneTS[i] = cost / Math.abs(tdemand); 
+							brokerDemandOneTS[i] = tdemand;
 						}
 						else
 						{
 							// Set broker cost to avg broker cost
-							if(tdemand != 0 && !bName.equalsIgnoreCase("default broker"))
-								System.out.println(bName + " Surplus demand at ts " + ts + " tdemand " + tdemand + " cost " + cost);
-							
-							brokerCostOneTS[i] = 0;
+							if(!bName.equalsIgnoreCase("default broker"))
+								System.out.println(bName + " Zero demand at ts " + ts + " tdemand " + tdemand + " cost " + cost);
 						}
 						
-						if(SPOT.equalsIgnoreCase(bName)){
+						/*if(SPOT.equalsIgnoreCase(bName)){
 							//System.out.println(bName + " demand at ts " + ts + " " + tdemand);
 							spotdemand = tdemand;
-						}
+						}*/
 					}
 					
 					// After one TS
 					for(int l = 0; l < n; l++){
-						if(brokerCostOneTS[l] == 0)
-							brokerCostOneTS[l] = brokerCostOneTS[n-1];
-						brokerCostAllTS[l] += spotdemand*brokerCostOneTS[l];
+						//if(brokerCostOneTS[l] == 0)
+						//	brokerCostOneTS[l] = brokerCostOneTS[n-1];
+						brokerCostAllTS[l] += Math.abs(brokerDemandOneTS[l])*brokerCostOneTS[l];
+						brokerDemandAllTS[l] += brokerDemandOneTS[l]; 
 						brokerCostOneTS[l] = 0;
+						brokerDemandOneTS[l] = 0;
 					}
-					spotTotDemand += spotdemand;
-					spotdemand = 0;
 					ts++;
 				}
 			} // End While
 			System.out.println("UNIT COST COMPARISON");
 			output.println("UNIT COST COMPARISON");
 			for(int i = 0; i < n; i++){
-				System.out.println(brokerID.get(i) + " unitCost " + brokerCostAllTS[i]/spotTotDemand + " cost " + brokerCostAllTS[i] + " tdemand " + spotTotDemand);
-				output.println(brokerID.get(i) + "," + brokerCostAllTS[i]/spotTotDemand);
+				System.out.println(brokerID.get(i) + " unitCost " + brokerCostAllTS[i]/Math.abs(brokerDemandAllTS[i]) + " cost " + brokerCostAllTS[i] + " tdemand " + brokerDemandAllTS[i]);
+				output.println(brokerID.get(i) + "," + brokerCostAllTS[i]/Math.abs(brokerDemandAllTS[i]));
 			}
 			output.close();
 		}

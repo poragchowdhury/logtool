@@ -19,7 +19,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -29,8 +28,6 @@ import java.util.TreeMap;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeFieldType;
 import org.powertac.common.BalancingTransaction;
 import org.powertac.common.Broker;
 import org.powertac.common.ClearedTrade;
@@ -40,11 +37,8 @@ import org.powertac.common.msg.SimStart;
 import org.powertac.common.msg.TimeslotUpdate;
 import org.powertac.common.repo.BrokerRepo;
 import org.powertac.common.repo.TimeslotRepo;
-import org.powertac.common.spring.SpringApplicationContext;
 import org.powertac.logtool.LogtoolContext;
-import org.powertac.logtool.common.DomainObjectReader;
 import org.powertac.logtool.common.NewObjectListener;
-import org.powertac.logtool.example.UnitCostAnalyzer.BrokerData;
 import org.powertac.logtool.ifc.Analyzer;
 
 /**
@@ -86,9 +80,6 @@ implements Analyzer
 	private int ignoreCount = 0;
 	private int indexOffset = 0; // should be Competition.deactivateTimeslotsAhead - 1
 
-	private boolean omitHeaders = false;
-	//private PrintWriter output = null;
-	//private PrintWriter outputCr = null;
 	private PrintWriter output = null;
 	private String dataFilename = "clearedTrades.data";
 	private double [] avgBrCr;
@@ -97,6 +88,7 @@ implements Analyzer
 	private double [] avgBrDrVol;
 	private double avgBal;
 	private double avgBalVol;
+	private int n = 0;
 	/**
 	 * Main method just creates an instance and passes command-line args to
 	 * its inherited cli() method.
@@ -118,7 +110,6 @@ implements Analyzer
 		int argOffset = 0;
 		if (args[0].equalsIgnoreCase("--no-headers")) {
 			argOffset = 1;
-			omitHeaders = true;
 		}
 		dataFilename = args[argOffset + 1];
 		super.cli(args[argOffset], this);
@@ -155,7 +146,6 @@ implements Analyzer
 
 		try {
 			output = new PrintWriter(new File(dataFilename+"Dr.csv"));
-			//outputCr = new PrintWriter(new File(dataFilename+"Cr.csv"));
 		}
 		catch (FileNotFoundException e) {
 			log.error("Cannot open file " + dataFilename);
@@ -168,47 +158,21 @@ implements Analyzer
 	@Override
 	public void report ()
 	{
-
 		for (Map.Entry<Integer, ClearedTrade[]> entry : data.entrySet()) {
-			String delim = "";
-
 			// Printing market clearing prices first
 			int ts = entry.getKey();
 			ClearedTrade[] trades = entry.getValue();
 			if (trades.length != 24)
 				log.error("short array " + trades.length);
 
-			/*
-			// print the avg broker values
-			output.format("MeanCT,");
-			outputCr.format("MeanCT,");
-
-			for (int i = 0; i < trades.length; i++) {
-				if (null == trades[i]) {
-					output.print(delim);
-					output.print(delim);
-					outputCr.print(delim);
-					outputCr.print(delim);
-				}
-				else {
-					printtofile(outputCr, delim, trades[i].getExecutionPrice());
-					printtofile(outputCr, delim, trades[i].getExecutionMWh());
-					printtofile(output, delim, trades[i].getExecutionPrice());
-					printtofile(output, delim, trades[i].getExecutionMWh());
-				}
-				delim = ",";
-			}
-			 */
 			boolean firstBroker = true;
 			// Now print broker informations
 			for (String brokerName: brokerNamesSorted){
 				Broker broker = brokerMap.get(brokerName);
 				dumpDataSimEnd(broker, ts, firstBroker);
 				firstBroker = false;
-				//output.println();
 			}
 			// print the avg broker values
-			//outputCr.format(",AvgBroker");
 			output.format(",AvgBroker");
 			for(int k = 0; k < 24; k++)
 			{
@@ -216,7 +180,7 @@ implements Analyzer
 				if(avgBrDrVol[k] == 0)
 					avgBrDr[k] = 0;
 				else
-					avgBrDr[k] /= avgBrDrVol[k];
+					avgBrDr[k] /= Math.abs(avgBrDrVol[k]);
 
 				printVals(output, avgBrDr[k]);
 				printVals(output, avgBrDrVol[k]);
@@ -225,7 +189,7 @@ implements Analyzer
 				if(avgBrCrVol[k] == 0)
 					avgBrCr[k] = 0;
 				else
-					avgBrCr[k] /= avgBrCrVol[k];
+					avgBrCr[k] /= Math.abs(avgBrCrVol[k]);
 				printVals(output, avgBrCr[k]);
 				printVals(output, avgBrCrVol[k]);
 				
@@ -243,21 +207,25 @@ implements Analyzer
 			avgBal = 0;
 			avgBalVol = 0;
 			totalImbalance = 0;
-			//outputCr.println();
 			output.println();
 		}
-		//outputCr.println();
+
 		output.println();
-
-		//outputCr.close();
 		output.close();
-
 	}
 
 	public void printtofile(PrintWriter o, String delim, Double val){
 		o.format("%s%.4f", delim, val);
 	}
 
+	/*
+	 * Keeping the prices as it is:
+	 * -ve price means money going from brokers account
+	 * +ve price means money coming to brokers account
+	 * -ve energy means energy going from brokers account 
+	 * +ve energy means energy coming to brokers account
+	 * 
+	 */
 	private void dumpDataSimEnd(Broker broker, int ts, boolean firstBroker){
 		//System.out.println("ok1");
 		HashMap<Integer, HashMap<Integer, ArrayList<MarketTransaction>>> tsmtx = dataMtx.get(broker);
@@ -292,16 +260,28 @@ implements Analyzer
 						for (MarketTransaction tx: txList) {
 							double money = tx.getPrice();//Math.abs(tx.getMWh()) * tx.getPrice();
 							if (money >= 0.0){
+								// Money Credit: +ve money; -ve energy
 								mtxC = money;
-								mtxCVol += Math.abs(tx.getMWh());
+								mtxCVol += tx.getMWh();
+								if(tx.getMWh() > 0) {
+									// Abnormal Credit of energy : Getting Free energy
+									System.out.println(broker.getUsername() + ": Money +ve, vol +ve i.e. getting free energy with money");
+								}
+								
 								avgBrCr[offset] += Math.abs(tx.getMWh()) * tx.getPrice();
-								avgBrCrVol[offset] += Math.abs(tx.getMWh());
+								avgBrCrVol[offset] += tx.getMWh();
 							}
 							else{
+								// Money Debit: -ve money; +ve energy
 								mtxD = money;
-								mtxDVol += Math.abs(tx.getMWh());
+								mtxDVol += tx.getMWh();
+								if(tx.getMWh() < 0) {
+									// Abnormal Debit of energy : Giving away energy
+									System.out.println(broker.getUsername() + ": Money -ve, vol -ve i.e. giving away free energy with money");
+								}
+								
 								avgBrDr[offset] += Math.abs(tx.getMWh()) * tx.getPrice();
-								avgBrDrVol[offset] += Math.abs(tx.getMWh());
+								avgBrDrVol[offset] += tx.getMWh();
 							}
 						}
 					}
@@ -318,7 +298,7 @@ implements Analyzer
 				}
 			}
 		}
-		//System.out.println("OK");
+		
 		// Now print balancing tx
 		HashMap<Integer, BalancingTransaction> tsbtx = dataBtx.get(broker);
 		if(tsbtx == null) {
@@ -329,13 +309,12 @@ implements Analyzer
 			BalancingTransaction btx = tsbtx.get(ts);
 			if(btx != null) {
 				double charge = btx.getCharge();
-				double vol = btx.getKWh()/1000;
+				double vol = (btx.getKWh()/1000)*(-1); // changing the volume as negative means deficit in bal
 				avgBal += charge;
 				avgBalVol += vol;
 				totalImbalance += vol;
 				printVals(output, charge);
 				printVals(output, vol);
-				//System.out.println(broker.getUsername() + " charge " + charge + " vol " + vol);
 			}
 			else
 			{
@@ -347,8 +326,10 @@ implements Analyzer
 
 	public void printTSEmptyValsForBroker(){
 		for(int offset=0; offset<=23; offset++){
+			// Debit transaction
 			printVals(output, 0);
 			printVals(output, 0);
+			// Credit transaction
 			printVals(output, 0);
 			printVals(output, 0);
 		}
@@ -371,12 +352,14 @@ implements Analyzer
 			System.out.println("Simulation Started");
 			List<Broker> tbrokerList = new ArrayList<Broker>();
 			tbrokerList = brokerRepo.findRetailBrokers();
-
+			
 			for(Broker b: tbrokerList){
 				brokerList.add(b);
 				brokerNamesSorted.add(b.getUsername());
+				n++;
 			}
 
+			System.out.println("Number of brokers " + n);
 			Collections.sort(brokerNamesSorted);
 
 			for(String s: brokerNamesSorted){
@@ -397,38 +380,6 @@ implements Analyzer
 		}
 	}
 
-	/*
-	// -----------------------------------
-	// catch ClearedTrade messages
-	class ClearedTradeHandler implements NewObjectListener
-	{
-
-		@Override
-		public void handleNewObject (Object thing)
-		{
-			if (ignoreCount > 0) {
-				return; // nothing to do yet
-			}
-			ClearedTrade ct = (ClearedTrade) thing;
-			int target = ct.getTimeslotIndex();
-			int now = timeslotRepo.getTimeslotIndex(timeService.getCurrentTime());
-			int offset = target - now - indexOffset;
-			if (offset < 0 || offset > 23) {
-				// problem
-				log.error("ClearedTrade index error: " + offset);
-			}
-			else {
-				ClearedTrade[] targetArray = data.get(target);
-				if (null == targetArray) {
-					targetArray = new ClearedTrade[24];
-					data.put(target, targetArray);
-				}
-				targetArray[offset] = ct;
-			}
-		}
-	}
-
-	 */
 	// -------------------------------
 	// catch BalancingTransactions
 	class BalancingTxHandler implements NewObjectListener
@@ -437,18 +388,27 @@ implements Analyzer
 		public void handleNewObject (Object thing)
 		{
 			BalancingTransaction tx = (BalancingTransaction)thing;
+			/*if(tx != null) {
+				double charge = tx.getCharge();
+				double vol = tx.getKWh();
+				int ts = tx.getPostedTimeslotIndex();
+				Broker broker = tx.getBroker();
+				if(charge < 0 && vol > 0)
+					System.out.println(ts + " " + broker.getUsername() + " bal charge " + charge + " vol " + vol);
+				else if(charge > 0 && vol < 0)
+					System.out.println(ts + " " + broker.getUsername() + " bal charge " + charge + " vol " + vol);
+			}*/
 			//System.out.println("TS "+ tx.getPostedTimeslotIndex() + " " + tx.getBroker().getUsername() + " Btx c: " + tx.getCharge() + " mwh: " + tx.getKWh());
 			HashMap<Integer, BalancingTransaction> tempBtx = dataBtx.get(tx.getBroker());
 			if(tempBtx == null)
 				tempBtx = new HashMap<Integer, BalancingTransaction>();
-			if(tx.getCharge() < 0) {
-				tempBtx.put(tx.getPostedTimeslotIndex(), tx);
-				dataBtx.put(tx.getBroker(), tempBtx);
-			}
+			
+			tempBtx.put(tx.getPostedTimeslotIndex(), tx);
+			dataBtx.put(tx.getBroker(), tempBtx);
 		} 
 	}
 	//-----------------------------------
-	// catch ClearedTrade messages
+	// catch MarketTransaction messages
 	class MarketTransactionHandler implements NewObjectListener
 	{
 
