@@ -194,12 +194,12 @@ public class ResultsHATrading
 								crmwh = Double.parseDouble(bCrMWh);
 							}
 							
-							if(j > 0){ // Restrict 0 HourAhead auctions
+							//if(j > 0){ // Restrict 0 HourAhead auctions
 								dr$ = dr$ + (drpr*Math.abs(drmwh)); 
 								cr$ = cr$ + (crpr*Math.abs(crmwh));
 								drTx = drTx + drmwh; 
 								crTx = crTx + crmwh;
-							}
+							//}
 							
 						} // Finished one timeslot for a broker
 						
@@ -275,26 +275,46 @@ public class ResultsHATrading
 					ts++;
 				}
 			} // End While
-			System.out.println("UNIT COST COMPARISON");
-			output.println("UNIT COST COMPARISON");
+			System.out.println("UNIT DR Energy COMPARISON (SELL)");
+			output.println("UNIT DR Energy COMPARISON (SELL)");
+			output.println("Broker,UnitDr(Sell$),Gain-$(+ve),Sold-MW(-ve)");
 			for(int i =0; i<n; i++)
 			{
-				System.out.println(brokerID.get(i) + " unitDr(Sell$) " + brokerDrAllTS[i]/Math.abs(brokerTxDrAllTS[i]) + " Gain-$ (+ve) " + brokerDrAllTS[i] + " Sold-MW (-ve) " + brokerTxDrAllTS[i]);
-				System.out.println(brokerID.get(i) + " unitCr(Buy$) " + brokerCrAllTS[i]/Math.abs(brokerTxCrAllTS[i]) + " Lose-$ (-ve) " + brokerCrAllTS[i] + " Bought-MW (+ve) " + brokerTxCrAllTS[i]);
+				System.out.println(brokerID.get(i).substring(0, 4) + "\tunitDr(Sell$)\t" + brokerDrAllTS[i]/Math.abs(brokerTxDrAllTS[i]) + "\tGain-$(+ve)\t" + brokerDrAllTS[i] + "\tSold-MW(-ve)\t" + brokerTxDrAllTS[i]);
+				output.println(brokerID.get(i).substring(0, 4)+","+brokerDrAllTS[i]/Math.abs(brokerTxDrAllTS[i])+","+brokerDrAllTS[i]+","+brokerTxDrAllTS[i]);
 			}
 			
-			System.out.println("For All Tx");
+			System.out.println("\nUNIT CR ENERGY COMPARISON (BUY)");
+			output.println("\nUNIT CR ENERGY COMPARISON (BUY)");
+			output.println("Broker,UnitCr(Buy$),Cost-$(-ve),Buy-MW(+ve)");
+			for(int i =0; i<n; i++)
+			{
+				System.out.println(brokerID.get(i).substring(0, 4) + "\tunitCr(Buy$)\t" + brokerCrAllTS[i]/Math.abs(brokerTxCrAllTS[i]) + "\tSpent-$(-ve)\t" + brokerCrAllTS[i] + "\tBought-MW(+ve)\t" + brokerTxCrAllTS[i]);
+				output.println(brokerID.get(i).substring(0, 4)+","+brokerCrAllTS[i]/Math.abs(brokerTxCrAllTS[i])+","+brokerCrAllTS[i]+","+brokerTxCrAllTS[i]);
+			}
+			
+			System.out.println("\nFOR All TX");
+			output.println("\nFOR All TX");
+			output.println("Broker,Unit($),Tot-$,Tot-MW");
 			for(int i = 0; i<n; i++) {
-				System.out.println(brokerID.get(i) + " unit$(Tot$) " + brokerTx$AllTS[i]/Math.abs(brokerTxWAllTS[i]) + " Total-$ " + brokerTx$AllTS[i] + " Total-Trade-MW " + brokerTxWAllTS[i]);
+				System.out.println(brokerID.get(i).substring(0, 4) + "\tunit$(Tot$)\t" + brokerTx$AllTS[i]/Math.abs(brokerTxWAllTS[i]) + "\tTotal-$\t" + brokerTx$AllTS[i] + "\tTotal-Trade-MW\t" + brokerTxWAllTS[i]);
+				output.println(brokerID.get(i).substring(0, 4)+","+brokerTx$AllTS[i]/Math.abs(brokerTxWAllTS[i])+","+brokerTx$AllTS[i]+","+brokerTxWAllTS[i]);
 			}
 			
-			System.out.println("\n\nHOW FUNNY!");
+			System.out.println("\nComparison with Average Broker Debit(Sell)");
+			output.println("Broker,UnitDr($),Gain-$,Sold-MW");
 			for(int i = 0; i < n; i++){
-				System.out.println(brokerID.get(i) + " unitDrDiffWithAvgB " + brokerDrDiffAllTS[i]/Math.abs(brokerTxDrAllTS[i]) + " Sell-diff " + brokerDrDiffAllTS[i] + " Sold-MW " + brokerTxDrAllTS[i]);
-				output.println(brokerID.get(i) + ",Dr," + brokerDrDiffAllTS[i]/Math.abs(brokerTxDrAllTS[i]));
-				System.out.println(brokerID.get(i) + " unitCrDiffWithAvg " + brokerCrDiffAllTS[i]/Math.abs(brokerTxDrAllTS[i]) + " Buy-diff " + brokerCrDiffAllTS[i] + " Bough-MW " + brokerTxCrAllTS[i]);
-				output.println(brokerID.get(i) + ",Cr," + brokerCrDiffAllTS[i]/Math.abs(brokerTxDrAllTS[i]));
+				System.out.println(brokerID.get(i).substring(0, 4) + "\tunitDrDiffWithAvgB\t" + brokerDrDiffAllTS[i]/Math.abs(brokerTxDrAllTS[i]) + "\tSell-diff\t" + brokerDrDiffAllTS[i] + "\tSold-MW\t" + brokerTxDrAllTS[i]);
+				output.println(brokerID.get(i).substring(0, 4)+","+brokerDrDiffAllTS[i]/Math.abs(brokerTxDrAllTS[i])+","+brokerDrDiffAllTS[i]+","+brokerTxDrAllTS[i]);
 			}
+
+			System.out.println("\nComparison with Average Broker Credit(Buy)");
+			output.println("Broker,UnitCr($),Cost-$,Buy-MW");
+			for(int i = 0; i < n; i++){
+				System.out.println(brokerID.get(i).substring(0, 4) + "\tunitCrDiffWithAvg\t" + brokerCrDiffAllTS[i]/Math.abs(brokerTxDrAllTS[i]) + "\tBuy-diff\t" + brokerCrDiffAllTS[i] + "\tBough-MW\t" + brokerTxCrAllTS[i]);
+				output.println(brokerID.get(i).substring(0, 4)+","+brokerCrDiffAllTS[i]/Math.abs(brokerTxCrAllTS[i])+","+brokerCrDiffAllTS[i]+","+brokerTxCrAllTS[i]);
+			}
+			
 			output.close();
 		}
 		catch(Exception ex){
