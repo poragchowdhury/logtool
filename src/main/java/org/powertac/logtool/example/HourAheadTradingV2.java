@@ -86,9 +86,12 @@ implements Analyzer
 	private double [] avgBrCrVol;
 	private double [] avgBrDr;
 	private double [] avgBrDrVol;
-	private double avgBal;
-	private double avgBalVol;
+	private double avgBalDr;
+	private double avgBalDrVol;
+	private double avgBalCr;
+	private double avgBalCrVol;
 	private int n = 0;
+	private int balTxNum = 3;
 	/**
 	 * Main method just creates an instance and passes command-line args to
 	 * its inherited cli() method.
@@ -200,12 +203,25 @@ implements Analyzer
 				avgBrCrVol[k] = 0.0;
 			}
 			// Bal Tx
-			printVals(output, avgBal);
-			printVals(output, avgBalVol);
+			double avgBalDrU = 0;
+			if(avgBalDrVol != 0)
+				avgBalDrU = avgBalDr / Math.abs(avgBalDrVol);
+			printVals(output, avgBalDrU);
+			printVals(output, avgBalDrVol);
+			
+			double avgBalCrU = 0;
+			if(avgBalCrVol != 0)
+				avgBalCrU = avgBalCr /Math.abs(avgBalCrVol);
+			printVals(output, avgBalCrU);
+			printVals(output, avgBalCrVol);
+			
 			printVals(output, totalImbalance);
+			
 			//reset bal
-			avgBal = 0;
-			avgBalVol = 0;
+			avgBalDr = 0;
+			avgBalDrVol = 0;
+			avgBalCr = 0;
+			avgBalCrVol = 0;
 			totalImbalance = 0;
 			output.println();
 		}
@@ -259,12 +275,12 @@ implements Analyzer
 					if (null != txList) {
 						for (MarketTransaction tx: txList) {
 							double money = tx.getPrice();//Math.abs(tx.getMWh()) * tx.getPrice();
-							if (money >= 0.0){
-								// Money Credit: +ve money; -ve energy
+							if (tx.getMWh() >= 0.0){
+								// Energy Credit (Buy Vol): +ve; Money -ve 
 								mtxC = money;
 								mtxCVol += tx.getMWh();
-								if(tx.getMWh() > 0) {
-									// Abnormal Credit of energy : Getting Free energy
+								if(money > 0) {
+									// Abnormal Credit of energy : Getting Free energy plus money
 									System.out.println(broker.getUsername() + ": Money +ve, vol +ve i.e. getting free energy with money");
 								}
 								
@@ -272,11 +288,11 @@ implements Analyzer
 								avgBrCrVol[offset] += tx.getMWh();
 							}
 							else{
-								// Money Debit: -ve money; +ve energy
+								// Energy Debit (Sell Vol): -ve; Money +ve 
 								mtxD = money;
 								mtxDVol += tx.getMWh();
-								if(tx.getMWh() < 0) {
-									// Abnormal Debit of energy : Giving away energy
+								if(money < 0) {
+									// Abnormal Debit of energy : Giving away energy plus money
 									System.out.println(broker.getUsername() + ": Money -ve, vol -ve i.e. giving away free energy with money");
 								}
 								
@@ -304,20 +320,41 @@ implements Analyzer
 		if(tsbtx == null) {
 			printVals(output, 0);
 			printVals(output, 0);
+			printVals(output, 0);
+			printVals(output, 0);
 		}
 		else {
 			BalancingTransaction btx = tsbtx.get(ts);
 			if(btx != null) {
 				double charge = btx.getCharge();
+				double balDr = 0;
+				double balDrVol = 0;
+				double balCr = 0;
+				double balCrVol = 0;
 				double vol = (btx.getKWh()/1000)*(-1); // changing the volume as negative means deficit in bal
-				avgBal += charge;
-				avgBalVol += vol;
+				if(vol >= 0) // Credit of Energy
+				{
+					balCr = charge;
+					balCrVol = vol;
+					avgBalCr += charge;
+					avgBalCrVol += vol;
+				}
+				else {
+					balDr = charge;
+					balDrVol = vol;
+					avgBalDr += charge;
+					avgBalDrVol += vol;
+				}
 				totalImbalance += vol;
-				printVals(output, charge);
-				printVals(output, vol);
+				printVals(output, balDr);
+				printVals(output, balDrVol);
+				printVals(output, balCr);
+				printVals(output, balCrVol);
 			}
 			else
 			{
+				printVals(output, 0);
+				printVals(output, 0);
 				printVals(output, 0);
 				printVals(output, 0);
 			}
@@ -354,11 +391,15 @@ implements Analyzer
 			tbrokerList = brokerRepo.findRetailBrokers();
 			
 			for(Broker b: tbrokerList){
+				if(b.getUsername().equalsIgnoreCase("default broker"))
+					continue;
 				brokerList.add(b);
 				brokerNamesSorted.add(b.getUsername());
 				n++;
 			}
 
+			balTxNum = n+1;
+			
 			System.out.println("Number of brokers " + n);
 			Collections.sort(brokerNamesSorted);
 
@@ -405,6 +446,8 @@ implements Analyzer
 			
 			tempBtx.put(tx.getPostedTimeslotIndex(), tx);
 			dataBtx.put(tx.getBroker(), tempBtx);
+			
+			balTxNum++;
 		} 
 	}
 	//-----------------------------------
@@ -483,6 +526,9 @@ implements Analyzer
 				if (null == data.get(timeslotSerial)) {
 					data.put(timeslotSerial, new ClearedTrade[24]);
 				}
+				/*if(balTxNum != (n+1))
+					System.out.println("Balancing Tx missmatch: balTxNum " + balTxNum + " Total Broker " + (n+1));*/
+				balTxNum = 0;
 			}
 		}
 	}

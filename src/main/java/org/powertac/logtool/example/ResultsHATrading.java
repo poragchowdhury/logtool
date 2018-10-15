@@ -77,7 +77,7 @@ public class ResultsHATrading
 	
 	private double N = 0.0;
 	private int HA = 24;
-	private int ITEMS = (4*HA)+1+2; // 1 for Broker name, 2 for Balancing Mkt transaction
+	private int ITEMS = (4*HA)+1+4; // 1 for Broker name, 2 for Balancing Mkt transaction
 	private int n = 0;
 	private boolean firstTime = true;
 	private String SPOT = "SPOT";
@@ -117,10 +117,20 @@ public class ResultsHATrading
 			
 			// Start reading the file and CALCULATE AVG
 			int ts = 0;
-			double brokerCostAllTS[] = new double [10];
-			double brokerDemandAllTS[] = new double [10];
-			double brokerCostOneTS[] = new double [10];
-			double brokerDemandOneTS[] = new double [10];
+			double brokerTx$AllTS[] = new double [10];
+			double brokerTxWAllTS[] = new double [10];
+			
+			double brokerDrAllTS[] = new double [10];
+			double brokerCrAllTS[] = new double [10];
+			double brokerDrDiffAllTS[] = new double [10];
+			double brokerTxDrAllTS[] = new double [10];
+			double brokerCrDiffAllTS[] = new double [10];
+			double brokerTxCrAllTS[] = new double [10];
+			
+			double brokerDrUOneTS[] = new double [10];
+			double brokerTxDrOneTS[] = new double [10];
+			double brokerCrUOneTS[] = new double [10];
+			double brokerTxCrOneTS[] = new double [10];
 			
 			while (sc.hasNextLine()){
 				String line = sc.nextLine();
@@ -143,8 +153,12 @@ public class ResultsHATrading
 						if(name == null)
 							brokerID.put(i, bName);
 						
-						double cost = 0.0;
-						double tdemand = 0.0;
+						double dr$ = 0.0;
+						double drTx = 0.0;
+						
+						double cr$ = 0.0;
+						double crTx = 0.0;
+						
 						for(int j=0;j<HA;j++)
 						{
 							double drpr = 0.0;
@@ -181,66 +195,105 @@ public class ResultsHATrading
 							}
 							
 							if(j > 0){ // Restrict 0 HourAhead auctions
-								cost = cost + (drpr*Math.abs(drmwh)) + (crpr*Math.abs(crmwh));
-								tdemand = tdemand + drmwh + crmwh;
+								dr$ = dr$ + (drpr*Math.abs(drmwh)); 
+								cr$ = cr$ + (crpr*Math.abs(crmwh));
+								drTx = drTx + drmwh; 
+								crTx = crTx + crmwh;
 							}
 							
 						} // Finished one timeslot for a broker
 						
-						double balV = 0;
-						double balp = 0;
+						double balDrV = 0;
+						double balDrP = 0;
+						double balCrV = 0;
+						double balCrP = 0;
 						
-						String balcost = arrVals[index];
+						String balDr = arrVals[index];
 						index++;
-						if(!balcost.equals("") && !balcost.equalsIgnoreCase("NaN")){
-							balp = Double.parseDouble(balcost);
+						if(!balDr.equals("") && !balDr.equalsIgnoreCase("NaN")){
+							balDrP = Double.parseDouble(balDr);
 						}
 						
-						String balVol = arrVals[index];
+						String balDrVol = arrVals[index];
 						index++;
-						if(!balVol.equals("") && !!balVol.equalsIgnoreCase("NaN")){
-							balV = Double.parseDouble(balVol);
+						if(!balDrVol.equals("") && !balDrVol.equalsIgnoreCase("NaN")){
+							balDrV = Double.parseDouble(balDrVol);
 						}
 						
-						cost+=balp;
-						tdemand+=balV;
-						
-						// Update the cost 
-						brokerCostOneTS[i] = 0; 
-						if(tdemand != 0){
-							brokerCostOneTS[i] = cost / Math.abs(tdemand); 
-							brokerDemandOneTS[i] = tdemand;
-						}
-						else
-						{
-							// Set broker cost to avg broker cost
-							if(!bName.equalsIgnoreCase("default broker"))
-								System.out.println(bName + " Zero demand at ts " + ts + " tdemand " + tdemand + " cost " + cost);
+						String balCr = arrVals[index];
+						index++;
+						if(!balCr.equals("") && !balCr.equalsIgnoreCase("NaN")){
+							balCrP = Double.parseDouble(balCr);
 						}
 						
-						/*if(SPOT.equalsIgnoreCase(bName)){
-							//System.out.println(bName + " demand at ts " + ts + " " + tdemand);
-							spotdemand = tdemand;
-						}*/
+						String balCrVol = arrVals[index];
+						index++;
+						if(!balCrVol.equals("") && !balCrVol.equalsIgnoreCase("NaN")){
+							balCrV = Double.parseDouble(balCrVol);
+						}
+						
+						dr$ = dr$ + (balDrP);
+						cr$ = cr$ + (balCrP);
+						drTx = drTx + balDrV;
+						crTx = crTx + balCrV;
+						
+						brokerTx$AllTS[i] += dr$ + cr$;
+						brokerTxWAllTS[i] += drTx + crTx;
+						
+						// Update the cost Dr
+						brokerDrUOneTS[i] = 0; 
+						if(drTx != 0){
+							brokerDrUOneTS[i] = dr$ / Math.abs(drTx); 
+							brokerTxDrOneTS[i] = drTx;
+						}
+						
+						// Update the cost Cr
+						brokerCrUOneTS[i] = 0; 
+						if(crTx != 0){
+							brokerCrUOneTS[i] = cr$ / Math.abs(crTx); 
+							brokerTxCrOneTS[i] = crTx;
+						}
 					}
 					
 					// After one TS
 					for(int l = 0; l < n; l++){
-						//if(brokerCostOneTS[l] == 0)
-						//	brokerCostOneTS[l] = brokerCostOneTS[n-1];
-						brokerCostAllTS[l] += Math.abs(brokerDemandOneTS[l])*brokerCostOneTS[l];
-						brokerDemandAllTS[l] += brokerDemandOneTS[l]; 
-						brokerCostOneTS[l] = 0;
-						brokerDemandOneTS[l] = 0;
+						brokerDrAllTS[l] += Math.abs(brokerTxDrOneTS[l])*brokerDrUOneTS[l];
+						brokerCrAllTS[l] += Math.abs(brokerTxCrOneTS[l])*brokerCrUOneTS[l];
+						
+						brokerDrDiffAllTS[l] += (Math.abs(brokerTxDrOneTS[l])*brokerDrUOneTS[n-1]) - (Math.abs(brokerTxDrOneTS[l])*brokerDrUOneTS[l]);
+						brokerTxDrAllTS[l] += brokerTxDrOneTS[l]; 
+
+						brokerCrDiffAllTS[l] += (Math.abs(brokerTxCrOneTS[l])*brokerCrUOneTS[l]) - (Math.abs(brokerTxCrOneTS[l])*brokerCrUOneTS[n-1]);
+						brokerTxCrAllTS[l] += brokerTxCrOneTS[l]; 
+						
+						// reset values for one ts
+						brokerDrUOneTS[l] = 0;
+						brokerTxDrOneTS[l] = 0;
+						brokerCrUOneTS[l] = 0;
+						brokerTxCrOneTS[l] = 0;
 					}
 					ts++;
 				}
 			} // End While
 			System.out.println("UNIT COST COMPARISON");
 			output.println("UNIT COST COMPARISON");
+			for(int i =0; i<n; i++)
+			{
+				System.out.println(brokerID.get(i) + " unitDr(Sell$) " + brokerDrAllTS[i]/Math.abs(brokerTxDrAllTS[i]) + " Gain-$ (+ve) " + brokerDrAllTS[i] + " Sold-MW (-ve) " + brokerTxDrAllTS[i]);
+				System.out.println(brokerID.get(i) + " unitCr(Buy$) " + brokerCrAllTS[i]/Math.abs(brokerTxCrAllTS[i]) + " Lose-$ (-ve) " + brokerCrAllTS[i] + " Bought-MW (+ve) " + brokerTxCrAllTS[i]);
+			}
+			
+			System.out.println("For All Tx");
+			for(int i = 0; i<n; i++) {
+				System.out.println(brokerID.get(i) + " unit$(Tot$) " + brokerTx$AllTS[i]/Math.abs(brokerTxWAllTS[i]) + " Total-$ " + brokerTx$AllTS[i] + " Total-Trade-MW " + brokerTxWAllTS[i]);
+			}
+			
+			System.out.println("\n\nHOW FUNNY!");
 			for(int i = 0; i < n; i++){
-				System.out.println(brokerID.get(i) + " unitCost " + brokerCostAllTS[i]/Math.abs(brokerDemandAllTS[i]) + " cost " + brokerCostAllTS[i] + " tdemand " + brokerDemandAllTS[i]);
-				output.println(brokerID.get(i) + "," + brokerCostAllTS[i]/Math.abs(brokerDemandAllTS[i]));
+				System.out.println(brokerID.get(i) + " unitDrDiffWithAvgB " + brokerDrDiffAllTS[i]/Math.abs(brokerTxDrAllTS[i]) + " Sell-diff " + brokerDrDiffAllTS[i] + " Sold-MW " + brokerTxDrAllTS[i]);
+				output.println(brokerID.get(i) + ",Dr," + brokerDrDiffAllTS[i]/Math.abs(brokerTxDrAllTS[i]));
+				System.out.println(brokerID.get(i) + " unitCrDiffWithAvg " + brokerCrDiffAllTS[i]/Math.abs(brokerTxDrAllTS[i]) + " Buy-diff " + brokerCrDiffAllTS[i] + " Bough-MW " + brokerTxCrAllTS[i]);
+				output.println(brokerID.get(i) + ",Cr," + brokerCrDiffAllTS[i]/Math.abs(brokerTxDrAllTS[i]));
 			}
 			output.close();
 		}
