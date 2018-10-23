@@ -233,8 +233,13 @@ public class ResultsHATrading
 							balCrV = Double.parseDouble(balCrVol);
 						}
 						
-						dr$ = dr$ + (balDrP);
-						cr$ = cr$ + (balCrP);
+						/*if(i ==(n-1)){
+							balDrP = balDrP*Math.abs(balDrV);
+							balCrP = balCrP*Math.abs(balCrV);
+						}*/
+						
+						dr$ = dr$ + balDrP;
+						cr$ = cr$ + balCrP;
 						drTx = drTx + balDrV;
 						crTx = crTx + balCrV;
 						
@@ -242,17 +247,31 @@ public class ResultsHATrading
 						brokerTxWAllTS[i] += drTx + crTx;
 						
 						// Update the cost Dr
-						brokerDrUOneTS[i] = 0; 
-						if(drTx != 0){
+						brokerDrUOneTS[i] = 0;
+						brokerTxDrOneTS[i] = 0;
+						if(drTx < 0){
 							brokerDrUOneTS[i] = dr$ / Math.abs(drTx); 
 							brokerTxDrOneTS[i] = drTx;
+						}
+						else{
+							if(drTx > 0){
+								System.out.println("drTx positive!");
+								System.exit(0);
+							}
 						}
 						
 						// Update the cost Cr
 						brokerCrUOneTS[i] = 0; 
-						if(crTx != 0){
+						brokerTxCrOneTS[i] = 0;
+						if(crTx > 0){
 							brokerCrUOneTS[i] = cr$ / Math.abs(crTx); 
 							brokerTxCrOneTS[i] = crTx;
+						}
+						else{
+							if(crTx < 0){
+								System.out.println("crTx negative!");
+								System.exit(0);
+							}
 						}
 					}
 					
@@ -261,13 +280,15 @@ public class ResultsHATrading
 						brokerDrAllTS[l] += Math.abs(brokerTxDrOneTS[l])*brokerDrUOneTS[l];
 						brokerCrAllTS[l] += Math.abs(brokerTxCrOneTS[l])*brokerCrUOneTS[l];
 						
-						brokerDrDiffAllTS[l] += (Math.abs(brokerTxDrOneTS[l])*brokerDrUOneTS[n-1]) - (Math.abs(brokerTxDrOneTS[l])*brokerDrUOneTS[l]);
+						// Sell
+						brokerDrDiffAllTS[l] += (Math.abs(brokerTxDrOneTS[l])*brokerDrUOneTS[l]) - (Math.abs(brokerTxDrOneTS[l])*brokerDrUOneTS[n-1]);
 						brokerTxDrAllTS[l] += brokerTxDrOneTS[l]; 
 						
 						if(l<n-1)
 							TOTAL_DR_VOL += brokerTxDrOneTS[l];
 						
-						brokerCrDiffAllTS[l] += (Math.abs(brokerTxCrOneTS[l])*brokerCrUOneTS[l]) - (Math.abs(brokerTxCrOneTS[l])*brokerCrUOneTS[n-1]);
+						// Buy
+						brokerCrDiffAllTS[l] += (Math.abs(brokerTxCrOneTS[l])*brokerCrUOneTS[n-1]) - (Math.abs(brokerTxCrOneTS[l])*brokerCrUOneTS[l]);
 						brokerTxCrAllTS[l] += brokerTxCrOneTS[l]; 
 							
 						if(l<n-1)

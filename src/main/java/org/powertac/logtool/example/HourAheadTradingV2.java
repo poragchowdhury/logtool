@@ -203,16 +203,16 @@ implements Analyzer
 				avgBrCrVol[k] = 0.0;
 			}
 			// Bal Tx
-			double avgBalDrU = 0;
+			/*double avgBalDrU = 0;
 			if(avgBalDrVol != 0)
-				avgBalDrU = avgBalDr / Math.abs(avgBalDrVol);
-			printVals(output, avgBalDrU);
+				avgBalDrU = avgBalDr / Math.abs(avgBalDrVol);*/
+			printVals(output, avgBalDr);
 			printVals(output, avgBalDrVol);
 			
-			double avgBalCrU = 0;
+			/*double avgBalCrU = 0;
 			if(avgBalCrVol != 0)
-				avgBalCrU = avgBalCr /Math.abs(avgBalCrVol);
-			printVals(output, avgBalCrU);
+				avgBalCrU = avgBalCr /Math.abs(avgBalCrVol);*/
+			printVals(output, avgBalCr);
 			printVals(output, avgBalCrVol);
 			
 			printVals(output, totalImbalance);
@@ -275,7 +275,8 @@ implements Analyzer
 					if (null != txList) {
 						for (MarketTransaction tx: txList) {
 							double money = tx.getPrice();//Math.abs(tx.getMWh()) * tx.getPrice();
-							if (tx.getMWh() >= 0.0){
+							if (tx.getMWh() > 0.0){
+								// Energy is coming to my account and money is going
 								// Energy Credit (Buy Vol): +ve; Money -ve 
 								mtxC = money;
 								mtxCVol += tx.getMWh();
@@ -332,7 +333,7 @@ implements Analyzer
 				double balCr = 0;
 				double balCrVol = 0;
 				double vol = (btx.getKWh()/1000)*(-1); // changing the volume as negative means deficit in bal
-				if(vol >= 0) // Credit of Energy
+				if(vol > 0) // Credit of Energy i.e. Have to Buy
 				{
 					balCr = charge;
 					balCrVol = vol;
