@@ -123,25 +123,25 @@ public class ResultsHATrading
 			double [] surplusTS = new double[10];
 			double [] zeroTS = new double[10];
 			double [] perfectTS = new double[10];
-			double brokerTx$AllTS[] = new double [10];
-			double brokerTxWAllTS[] = new double [10];
+			double brokerTx$AllTS[][] = new double [2][10];
+			double brokerTxWAllTS[][] = new double [2][10];
 			
-			double brokerDrAllTS[] = new double [10];
-			double brokerCrAllTS[] = new double [10];
-			double brokerDrDiffAllTS[] = new double [10];
-			double brokerTxDrAllTS[] = new double [10];
-			double brokerCrDiffAllTS[] = new double [10];
-			double brokerTxCrAllTS[] = new double [10];
+			double brokerDrAllTS[][] = new double [2][10];
+			double brokerCrAllTS[][] = new double [2][10];
+			double brokerDrDiffAllTS[][] = new double [2][10];
+			double brokerTxDrAllTS[][] = new double [2][10];
+			double brokerCrDiffAllTS[][] = new double [2][10];
+			double brokerTxCrAllTS[][] = new double [2][10];
 			double brokerTxCrBalAllTS[] = new double [10];
 			double brokerTxDrBalAllTS[] = new double [10];
 			
 			
-			double brokerDrUOneTS[] = new double [10];
-			double brokerTxDrOneTS[] = new double [10];
-			double brokerCrUOneTS[] = new double [10];
-			double brokerTxCrOneTS[] = new double [10];
-			double TOTAL_DR_VOL = 0;
-			double TOTAL_CR_VOL = 0;
+			double brokerDrUOneTS[][] = new double [2][10];
+			double brokerTxDrOneTS[][] = new double [2][10];
+			double brokerCrUOneTS[][] = new double [2][10];
+			double brokerTxCrOneTS[][] = new double [2][10];
+			double TOTAL_DR_VOL[] = {0,0};
+			double TOTAL_CR_VOL[] = {0,0};
 			while (sc.hasNextLine()){
 				String line = sc.nextLine();
 				if(!line.equalsIgnoreCase("")){
@@ -163,11 +163,11 @@ public class ResultsHATrading
 						if(name == null)
 							brokerID.put(i, bName);
 						
-						double dr$ = 0.0;
-						double drTx = 0.0;
+						double [] dr$ = {0.0, 0.0};
+						double [] drTx = {0.0, 0.0};
 						
-						double cr$ = 0.0;
-						double crTx = 0.0;
+						double [] cr$ = {0.0, 0.0};
+						double [] crTx = {0.0, 0.0};
 						
 						for(int j=0;j<HA;j++)
 						{
@@ -204,12 +204,18 @@ public class ResultsHATrading
 								crmwh = Double.parseDouble(bCrMWh);
 							}
 							
-							//if(j > 0){ // Restrict 0 HourAhead auctions
-								dr$ = dr$ + (drpr*Math.abs(drmwh)); 
-								cr$ = cr$ + (crpr*Math.abs(crmwh));
-								drTx = drTx + drmwh; 
-								crTx = crTx + crmwh;
-							//}
+							
+							dr$[0] = dr$[0] + (drpr*Math.abs(drmwh)); 
+							cr$[0] = cr$[0] + (crpr*Math.abs(crmwh));
+							drTx[0] = drTx[0] + drmwh; 
+							crTx[0] = crTx[0] + crmwh;
+							
+							if(j > 0){ // Restrict 0 HourAhead auctions
+								dr$[1] = dr$[1] + (drpr*Math.abs(drmwh)); 
+								cr$[1] = cr$[1] + (crpr*Math.abs(crmwh));
+								drTx[1] = drTx[1] + drmwh; 
+								crTx[1] = crTx[1] + crmwh;
+							}
 							
 						} // Finished one timeslot for a broker
 						
@@ -247,90 +253,170 @@ public class ResultsHATrading
 						}
 						
 						if(balCrV == 0 && balDrV == 0) {
-							if(drTx == 0 && crTx == 0) // zerodemand
+							if(drTx[0] == 0 && crTx[0] == 0) // zerodemand
 								zeroTS[i]++;
 							else
 								perfectTS[i]++;
 							
 						}
 						
-						/*if(i ==(n-1)){
-							balDrP = balDrP*Math.abs(balDrV);
-							balCrP = balCrP*Math.abs(balCrV);
-						}*/
+						// Comment to ignore balancing market
+						dr$[0] = dr$[0] + balDrP;
+						cr$[0] = cr$[0] + balCrP;
+						drTx[0] = drTx[0] + balDrV;
+						crTx[0] = crTx[0] + balCrV;
 						
-						dr$ = dr$ + balDrP;
-						cr$ = cr$ + balCrP;
-						drTx = drTx + balDrV;
-						crTx = crTx + balCrV;
-						
-						brokerTx$AllTS[i] += dr$ + cr$;
-						brokerTxWAllTS[i] += drTx + crTx;
+						brokerTx$AllTS[0][i] += dr$[0] + cr$[0];
+						brokerTxWAllTS[0][i] += drTx[0] + crTx[0];
+						brokerTx$AllTS[1][i] += dr$[1] + cr$[1];
+						brokerTxWAllTS[1][i] += drTx[1] + crTx[1];
 						
 						// Update the cost Dr
-						brokerDrUOneTS[i] = 0;
-						brokerTxDrOneTS[i] = 0;
-						if(drTx < 0){
-							brokerDrUOneTS[i] = dr$ / Math.abs(drTx); 
-							brokerTxDrOneTS[i] = drTx;
+						brokerDrUOneTS[0][i] = 0;
+						brokerDrUOneTS[1][i] = 0;
+						brokerTxDrOneTS[0][i] = 0;
+						brokerTxDrOneTS[1][i] = 0;
+						if(drTx[0] < 0){
+							brokerDrUOneTS[0][i] = dr$[0] / Math.abs(drTx[0]); 
+							brokerTxDrOneTS[0][i] = drTx[0];
 						}
 						else{
-							if(drTx > 0){
-								System.out.println("drTx positive!");
+							if(drTx[0] > 0){
+								System.out.println("ERROR: drTx positive!");
+								System.exit(0);
+							}
+						}
+						
+						if(drTx[1] < 0){
+							brokerDrUOneTS[1][i] = dr$[1] / Math.abs(drTx[1]); 
+							brokerTxDrOneTS[1][i] = drTx[1];
+						}
+						else{
+							if(drTx[1] > 0){
+								System.out.println("ERROR: drTx positive!");
 								System.exit(0);
 							}
 						}
 						
 						// Update the cost Cr
-						brokerCrUOneTS[i] = 0; 
-						brokerTxCrOneTS[i] = 0;
-						if(crTx > 0){
-							brokerCrUOneTS[i] = cr$ / Math.abs(crTx); 
-							brokerTxCrOneTS[i] = crTx;
+						brokerCrUOneTS[0][i] = 0; 
+						brokerTxCrOneTS[0][i] = 0;
+						brokerCrUOneTS[1][i] = 0; 
+						brokerTxCrOneTS[1][i] = 0;
+						
+						if(crTx[0] > 0){
+							brokerCrUOneTS[0][i] = cr$[0] / Math.abs(crTx[0]); 
+							brokerTxCrOneTS[0][i] = crTx[0];
 						}
 						else{
-							if(crTx < 0){
-								System.out.println("crTx negative!");
+							if(crTx[0] < 0){
+								System.out.println("ERROR: crTx negative!");
+								System.exit(0);
+							}
+						}
+						
+						if(crTx[1] > 0){
+							brokerCrUOneTS[1][i] = cr$[1] / Math.abs(crTx[1]); 
+							brokerTxCrOneTS[1][i] = crTx[1];
+						}
+						else{
+							if(crTx[1] < 0){
+								System.out.println("ERROR: crTx negative!");
 								System.exit(0);
 							}
 						}
 					}
 					
+					// Update the brokerDrUOneTS[n-1] & brokerCrUOneTS[n-1]
+					brokerTxDrOneTS[0][n-1] = 0;
+					brokerTxCrOneTS[0][n-1] = 0;
+					brokerDrUOneTS[0][n-1] = 0;
+					brokerCrUOneTS[0][n-1] = 0;
+					brokerTxDrOneTS[1][n-1] = 0;
+					brokerTxCrOneTS[1][n-1] = 0;
+					brokerDrUOneTS[1][n-1] = 0;
+					brokerCrUOneTS[1][n-1] = 0;
+					
+					for(int l = 0; l < n-1; l++){
+						for(int x = 0; x < 2; x++){
+							brokerTxDrOneTS[x][n-1] += brokerTxDrOneTS[x][l];
+							brokerTxCrOneTS[x][n-1] += brokerTxCrOneTS[x][l];
+							brokerDrUOneTS[x][n-1] += Math.abs(brokerTxDrOneTS[x][l])*brokerDrUOneTS[x][l];
+							brokerCrUOneTS[x][n-1] += Math.abs(brokerTxCrOneTS[x][l])*brokerCrUOneTS[x][l];
+						}
+					}
+					brokerDrUOneTS[0][n-1] /= Math.abs(brokerTxDrOneTS[0][n-1]);
+					brokerDrUOneTS[1][n-1] /= Math.abs(brokerTxDrOneTS[1][n-1]);
+					brokerCrUOneTS[0][n-1] /= Math.abs(brokerTxCrOneTS[0][n-1]);
+					brokerCrUOneTS[1][n-1] /= Math.abs(brokerTxCrOneTS[1][n-1]);
+					
+					if(brokerTxDrOneTS[0][n-1] == 0)
+						brokerDrUOneTS[0][n-1] = 0;
+					
+					if(brokerTxDrOneTS[1][n-1] == 0)
+						brokerDrUOneTS[1][n-1] = 0;
+					
+					if(brokerTxCrOneTS[0][n-1] == 0)
+						brokerCrUOneTS[0][n-1] = 0;
+					
+					if(brokerTxCrOneTS[1][n-1] == 0)
+						brokerCrUOneTS[1][n-1] = 0;
+					
 					// After one TS
 					for(int l = 0; l < n; l++){
-						brokerDrAllTS[l] += Math.abs(brokerTxDrOneTS[l])*brokerDrUOneTS[l];
-						brokerCrAllTS[l] += Math.abs(brokerTxCrOneTS[l])*brokerCrUOneTS[l];
-						
-						// Sell
-						brokerDrDiffAllTS[l] += (Math.abs(brokerTxDrOneTS[l])*brokerDrUOneTS[l]) - (Math.abs(brokerTxDrOneTS[l])*brokerDrUOneTS[n-1]);
-						brokerTxDrAllTS[l] += brokerTxDrOneTS[l]; 
-						
-						if(l<n-1)
-							TOTAL_DR_VOL += brokerTxDrOneTS[l];
-						
-						// Buy
-						brokerCrDiffAllTS[l] += (Math.abs(brokerTxCrOneTS[l])*brokerCrUOneTS[n-1]) - (Math.abs(brokerTxCrOneTS[l])*brokerCrUOneTS[l]);
-						brokerTxCrAllTS[l] += brokerTxCrOneTS[l]; 
+						for(int x = 0; x < 2; x++){
+							brokerDrAllTS[x][l] += Math.abs(brokerTxDrOneTS[x][l])*brokerDrUOneTS[x][l];
+							brokerCrAllTS[x][l] += Math.abs(brokerTxCrOneTS[x][l])*brokerCrUOneTS[x][l];
 							
-						if(l<n-1)
-							TOTAL_CR_VOL += brokerTxCrOneTS[l]; 
-						
-						// reset values for one ts
-						brokerDrUOneTS[l] = 0;
-						brokerTxDrOneTS[l] = 0;
-						brokerCrUOneTS[l] = 0;
-						brokerTxCrOneTS[l] = 0;
+							// Sell
+							brokerDrDiffAllTS[x][l] += (Math.abs(brokerTxDrOneTS[x][l])*brokerDrUOneTS[x][l]) - (Math.abs(brokerTxDrOneTS[x][l])*brokerDrUOneTS[x][n-1]);
+							brokerTxDrAllTS[x][l] += brokerTxDrOneTS[x][l]; 
+							
+							if(l<n-1)
+								TOTAL_DR_VOL[x] += brokerTxDrOneTS[x][l];
+							
+							// Buy
+							brokerCrDiffAllTS[x][l] += (Math.abs(brokerTxCrOneTS[x][l])*brokerCrUOneTS[x][n-1]) - (Math.abs(brokerTxCrOneTS[x][l])*brokerCrUOneTS[x][l]);
+							brokerTxCrAllTS[x][l] += brokerTxCrOneTS[x][l]; 
+								
+							if(l<n-1)
+								TOTAL_CR_VOL[x] += brokerTxCrOneTS[x][l]; 
+							
+							// reset values for one ts
+							brokerDrUOneTS[x][l] = 0;
+							brokerTxDrOneTS[x][l] = 0;
+							brokerCrUOneTS[x][l] = 0;
+							brokerTxCrOneTS[x][l] = 0;
+						}
 					}
 					ts++;
 				}
 			} // End While
-			System.out.println("UNIT DR Energy COMPARISON (SELL)");
-			output.println("UNIT DR Energy COMPARISON (SELL)");
+			System.out.println("UNIT DR Energy COMPARISON (SELL) without Balancing and 0 HourAhead Auction");
+			output.println("UNIT DR Energy COMPARISON (SELL) without Balancing and 0 HourAhead Auction");
 			output.println("Broker,UnitDr(Sell$),Gain-$(+ve),Sold-MW(-ve),%");
 			for(int i =0; i<n; i++)
 			{
-				System.out.println(brokerID.get(i).substring(0, 4) + "\tunitDr(Sell$)\t" + brokerDrAllTS[i]/Math.abs(brokerTxDrAllTS[i]) + "\tGain-$(+ve)\t" + brokerDrAllTS[i] + "\tSold-MW(-ve)\t" + brokerTxDrAllTS[i] + "("+ (brokerTxDrAllTS[i]*100)/TOTAL_DR_VOL +"%)");
-				output.println(brokerID.get(i).substring(0, 4)+","+brokerDrAllTS[i]/Math.abs(brokerTxDrAllTS[i])+","+brokerDrAllTS[i]+","+brokerTxDrAllTS[i]+","+(brokerTxDrAllTS[i]*100)/TOTAL_DR_VOL);
+				System.out.println(brokerID.get(i).substring(0, 4) + "\tunitDr(Sell$)\t" + brokerDrAllTS[1][i]/Math.abs(brokerTxDrAllTS[1][i]) + "\tGain-$(+ve)\t" + brokerDrAllTS[1][i] + "\tSold-MW(-ve)\t" + brokerTxDrAllTS[1][i] + "("+ (brokerTxDrAllTS[1][i]*100)/TOTAL_DR_VOL[1] +"%)");
+				output.println(brokerID.get(i).substring(0, 4)+","+brokerDrAllTS[1][i]/Math.abs(brokerTxDrAllTS[1][i])+","+brokerDrAllTS[1][i]+","+brokerTxDrAllTS[1][i]+","+(brokerTxDrAllTS[1][i]*100)/TOTAL_DR_VOL[1]);
+			}
+
+			System.out.println("\nUNIT DR Energy COMPARISON (SELL)");
+			output.println("\nUNIT DR Energy COMPARISON (SELL)");
+			output.println("Broker,UnitDr(Sell$),Gain-$(+ve),Sold-MW(-ve),%");
+			for(int i =0; i<n; i++)
+			{
+				System.out.println(brokerID.get(i).substring(0, 4) + "\tunitDr(Sell$)\t" + brokerDrAllTS[0][i]/Math.abs(brokerTxDrAllTS[0][i]) + "\tGain-$(+ve)\t" + brokerDrAllTS[0][i] + "\tSold-MW(-ve)\t" + brokerTxDrAllTS[0][i] + "("+ (brokerTxDrAllTS[0][i]*100)/TOTAL_DR_VOL[0] +"%)");
+				output.println(brokerID.get(i).substring(0, 4)+","+brokerDrAllTS[0][i]/Math.abs(brokerTxDrAllTS[0][i])+","+brokerDrAllTS[0][i]+","+brokerTxDrAllTS[0][i]+","+(brokerTxDrAllTS[0][i]*100)/TOTAL_DR_VOL[0]);
+			}
+			
+			System.out.println("\nUNIT CR ENERGY COMPARISON (BUY) without Balancing and 0 HourAhead Auction");
+			output.println("\nUNIT CR ENERGY COMPARISON (BUY) without Balancing and 0 HourAhead Auction");
+			output.println("Broker,UnitCr(Buy$),Cost-$(-ve),Buy-MW(+ve),%");
+			for(int i =0; i<n; i++)
+			{
+				System.out.println(brokerID.get(i).substring(0, 4) + "\tunitCr(Buy$)\t" + brokerCrAllTS[1][i]/Math.abs(brokerTxCrAllTS[1][i]) + "\tSpent-$(-ve)\t" + brokerCrAllTS[1][i] + "\tBought-MW(+ve)\t" + brokerTxCrAllTS[1][i] + "("+ (brokerTxCrAllTS[1][i]*100)/TOTAL_CR_VOL[1] +"%)");
+				output.println(brokerID.get(i).substring(0, 4)+","+brokerCrAllTS[1][i]/Math.abs(brokerTxCrAllTS[1][i])+","+brokerCrAllTS[1][i]+","+brokerTxCrAllTS[1][i]+","+(brokerTxCrAllTS[1][i]*100)/TOTAL_CR_VOL[1]);
 			}
 			
 			System.out.println("\nUNIT CR ENERGY COMPARISON (BUY)");
@@ -338,52 +424,76 @@ public class ResultsHATrading
 			output.println("Broker,UnitCr(Buy$),Cost-$(-ve),Buy-MW(+ve),%");
 			for(int i =0; i<n; i++)
 			{
-				System.out.println(brokerID.get(i).substring(0, 4) + "\tunitCr(Buy$)\t" + brokerCrAllTS[i]/Math.abs(brokerTxCrAllTS[i]) + "\tSpent-$(-ve)\t" + brokerCrAllTS[i] + "\tBought-MW(+ve)\t" + brokerTxCrAllTS[i] + "("+ (brokerTxCrAllTS[i]*100)/TOTAL_CR_VOL +"%)");
-				output.println(brokerID.get(i).substring(0, 4)+","+brokerCrAllTS[i]/Math.abs(brokerTxCrAllTS[i])+","+brokerCrAllTS[i]+","+brokerTxCrAllTS[i]+","+(brokerTxCrAllTS[i]*100)/TOTAL_CR_VOL);
+				System.out.println(brokerID.get(i).substring(0, 4) + "\tunitCr(Buy$)\t" + brokerCrAllTS[0][i]/Math.abs(brokerTxCrAllTS[0][i]) + "\tSpent-$(-ve)\t" + brokerCrAllTS[0][i] + "\tBought-MW(+ve)\t" + brokerTxCrAllTS[0][i] + "("+ (brokerTxCrAllTS[0][i]*100)/TOTAL_CR_VOL[0] +"%)");
+				output.println(brokerID.get(i).substring(0, 4)+","+brokerCrAllTS[0][i]/Math.abs(brokerTxCrAllTS[0][i])+","+brokerCrAllTS[0][i]+","+brokerTxCrAllTS[0][i]+","+(brokerTxCrAllTS[0][i]*100)/TOTAL_CR_VOL[0]);
 			}
 			
-			System.out.println("\nFOR All TX");
+			System.out.println("\nFOR All TX without Balancing and 0 HourAhead Auction");
+			output.println("\nFOR All TX without Balancing and 0 HourAhead Auction");
+			output.println("Broker,Unit($),Tot-$,Tot-MW");
+			for(int i = 0; i<n; i++) {
+				System.out.println(brokerID.get(i).substring(0, 4) + "\tunit$(Tot$)\t" + brokerTx$AllTS[1][i]/Math.abs(brokerTxWAllTS[1][i]) + "\tTotal-$\t" + brokerTx$AllTS[1][i] + "\tTotal-Trade-MW\t" + brokerTxWAllTS[1][i]);
+				output.println(brokerID.get(i).substring(0, 4)+","+brokerTx$AllTS[1][i]/Math.abs(brokerTxWAllTS[1][i])+","+brokerTx$AllTS[1][i]+","+brokerTxWAllTS[1][i]);
+			}
+			
+			System.out.println("\nFOR All TX ");
 			output.println("\nFOR All TX");
 			output.println("Broker,Unit($),Tot-$,Tot-MW");
 			for(int i = 0; i<n; i++) {
-				System.out.println(brokerID.get(i).substring(0, 4) + "\tunit$(Tot$)\t" + brokerTx$AllTS[i]/Math.abs(brokerTxWAllTS[i]) + "\tTotal-$\t" + brokerTx$AllTS[i] + "\tTotal-Trade-MW\t" + brokerTxWAllTS[i]);
-				output.println(brokerID.get(i).substring(0, 4)+","+brokerTx$AllTS[i]/Math.abs(brokerTxWAllTS[i])+","+brokerTx$AllTS[i]+","+brokerTxWAllTS[i]);
+				System.out.println(brokerID.get(i).substring(0, 4) + "\tunit$(Tot$)\t" + brokerTx$AllTS[0][i]/Math.abs(brokerTxWAllTS[0][i]) + "\tTotal-$\t" + brokerTx$AllTS[0][i] + "\tTotal-Trade-MW\t" + brokerTxWAllTS[0][i]);
+				output.println(brokerID.get(i).substring(0, 4)+","+brokerTx$AllTS[0][i]/Math.abs(brokerTxWAllTS[0][i])+","+brokerTx$AllTS[0][i]+","+brokerTxWAllTS[0][i]);
+			}
+			
+			System.out.println("\nComparison with Average Broker Debit(Sell) without Balancing and 0 HourAhead Auction");
+			output.println("\nComparison with Average Broker Debit(Sell) without Balancing and 0 HourAhead Auction");
+			output.println("Broker,UnitDr($),Gain-$,Sold-MW,%");
+			for(int i = 0; i < n-1; i++){
+				System.out.println(brokerID.get(i).substring(0, 4) + "\tunitDrDiffWithAvgB\t" + brokerDrDiffAllTS[1][i]/Math.abs(brokerTxDrAllTS[1][i]) + "\tSell-diff\t" + brokerDrDiffAllTS[1][i] + "\tSold-MW\t" + brokerTxDrAllTS[1][i] + "("+ (brokerTxDrAllTS[1][i]*100)/TOTAL_DR_VOL[1] +"%)");
+				output.println(brokerID.get(i).substring(0, 4)+","+brokerDrDiffAllTS[1][i]/Math.abs(brokerTxDrAllTS[1][i])+","+brokerDrDiffAllTS[1][i]+","+brokerTxDrAllTS[1][i]+","+(brokerTxDrAllTS[1][i]*100)/TOTAL_DR_VOL[1]);
 			}
 			
 			System.out.println("\nComparison with Average Broker Debit(Sell)");
 			output.println("\nComparison with Average Broker Debit(Sell)");
 			output.println("Broker,UnitDr($),Gain-$,Sold-MW,%");
-			for(int i = 0; i < n; i++){
-				System.out.println(brokerID.get(i).substring(0, 4) + "\tunitDrDiffWithAvgB\t" + brokerDrDiffAllTS[i]/Math.abs(brokerTxDrAllTS[i]) + "\tSell-diff\t" + brokerDrDiffAllTS[i] + "\tSold-MW\t" + brokerTxDrAllTS[i] + "("+ (brokerTxDrAllTS[i]*100)/TOTAL_DR_VOL +"%)");
-				output.println(brokerID.get(i).substring(0, 4)+","+brokerDrDiffAllTS[i]/Math.abs(brokerTxDrAllTS[i])+","+brokerDrDiffAllTS[i]+","+brokerTxDrAllTS[i]+","+(brokerTxDrAllTS[i]*100)/TOTAL_DR_VOL);
+			for(int i = 0; i < n-1; i++){
+				System.out.println(brokerID.get(i).substring(0, 4) + "\tunitDrDiffWithAvgB\t" + brokerDrDiffAllTS[0][i]/Math.abs(brokerTxDrAllTS[0][i]) + "\tSell-diff\t" + brokerDrDiffAllTS[0][i] + "\tSold-MW\t" + brokerTxDrAllTS[0][i] + "("+ (brokerTxDrAllTS[0][i]*100)/TOTAL_DR_VOL[0] +"%)");
+				output.println(brokerID.get(i).substring(0, 4)+","+brokerDrDiffAllTS[0][i]/Math.abs(brokerTxDrAllTS[0][i])+","+brokerDrDiffAllTS[0][i]+","+brokerTxDrAllTS[0][i]+","+(brokerTxDrAllTS[0][i]*100)/TOTAL_DR_VOL[0]);
 			}
 
+			System.out.println("\nComparison with Average Broker Credit(Buy) without Balancing and 0 HourAhead Auction");
+			output.println("\nComparison with Average Broker Credit(Buy) without Balancing and 0 HourAhead Auction");
+			output.println("Broker,UnitCr($),Cost-$,Buy-MW,%");
+			for(int i = 0; i < n-1; i++){
+				System.out.println(brokerID.get(i).substring(0, 4) + "\tunitCrDiffWithAvg\t" + brokerCrDiffAllTS[1][i]/Math.abs(brokerTxCrAllTS[1][i]) + "\tBuy-diff\t" + brokerCrDiffAllTS[1][i] + "\tBough-MW\t" + brokerTxCrAllTS[1][i] + "("+ (brokerTxCrAllTS[1][i]*100)/TOTAL_CR_VOL[1] +"%)");
+				output.println(brokerID.get(i).substring(0, 4)+","+brokerCrDiffAllTS[1][i]/Math.abs(brokerTxCrAllTS[1][i])+","+brokerCrDiffAllTS[1][i]+","+brokerTxCrAllTS[1][i]+","+(brokerTxCrAllTS[1][i]*100)/TOTAL_CR_VOL[1]);
+			}
+			
 			System.out.println("\nComparison with Average Broker Credit(Buy)");
 			output.println("\nComparison with Average Broker Credit(Buy)");
 			output.println("Broker,UnitCr($),Cost-$,Buy-MW,%");
-			for(int i = 0; i < n; i++){
-				System.out.println(brokerID.get(i).substring(0, 4) + "\tunitCrDiffWithAvg\t" + brokerCrDiffAllTS[i]/Math.abs(brokerTxDrAllTS[i]) + "\tBuy-diff\t" + brokerCrDiffAllTS[i] + "\tBough-MW\t" + brokerTxCrAllTS[i] + "("+ (brokerTxCrAllTS[i]*100)/TOTAL_CR_VOL +"%)");
-				output.println(brokerID.get(i).substring(0, 4)+","+brokerCrDiffAllTS[i]/Math.abs(brokerTxCrAllTS[i])+","+brokerCrDiffAllTS[i]+","+brokerTxCrAllTS[i]+","+(brokerTxCrAllTS[i]*100)/TOTAL_CR_VOL);
+			for(int i = 0; i < n-1; i++){
+				System.out.println(brokerID.get(i).substring(0, 4) + "\tunitCrDiffWithAvg\t" + brokerCrDiffAllTS[0][i]/Math.abs(brokerTxCrAllTS[0][i]) + "\tBuy-diff\t" + brokerCrDiffAllTS[0][i] + "\tBough-MW\t" + brokerTxCrAllTS[0][i] + "("+ (brokerTxCrAllTS[0][i]*100)/TOTAL_CR_VOL[0] +"%)");
+				output.println(brokerID.get(i).substring(0, 4)+","+brokerCrDiffAllTS[0][i]/Math.abs(brokerTxCrAllTS[0][i])+","+brokerCrDiffAllTS[0][i]+","+brokerTxCrAllTS[0][i]+","+(brokerTxCrAllTS[0][i]*100)/TOTAL_CR_VOL[0]);
 			}
 			
-			System.out.println("\nDeficit How Many Times? i.e. buying from the balancing market");
-			output.println("\nDeficit How Many Times? i.e. buying from the balancing market");
+			System.out.println("\nDeficit How Many Times? i.e. getting energy from the balancing market");
+			output.println("\nDeficit How Many Times? i.e. getting energy from the balancing market");
 			output.println("Broker,times%,vol%");
 			for(int i = 0; i < n-1; i++){
-				System.out.println(brokerID.get(i).substring(0, 4) + "\tt%\t" + (deficitTS[i]/ts)*100 + "\tvolume%\t" + (brokerTxCrBalAllTS[i]/brokerTxCrAllTS[i])*100);
-				output.println(brokerID.get(i).substring(0, 4)+","+(deficitTS[i]/ts)*100 + ","+(brokerTxCrBalAllTS[i]/brokerTxCrAllTS[i])*100);
+				System.out.println(brokerID.get(i).substring(0, 4) + "\tt%\t" + (deficitTS[i]/ts)*100 + "\tvolume%\t" + (brokerTxCrBalAllTS[i]/brokerTxCrAllTS[0][i])*100);
+				output.println(brokerID.get(i).substring(0, 4)+","+(deficitTS[i]/ts)*100 + ","+(brokerTxCrBalAllTS[i]/brokerTxCrAllTS[0][i])*100);
 			}
 			
-			System.out.println("\nSurplus How Many Times? i.e. selling in the balancing market");
-			output.println("\nSurplus How Many Times? i.e. selling in the balancing market");
+			System.out.println("\nSurplus How Many Times? i.e. giving away energy in the balancing market");
+			output.println("\nSurplus How Many Times? i.e. giving away energy in the balancing market");
 			output.println("Broker,%,vol%");
 			for(int i = 0; i < n-1; i++){
-				System.out.println(brokerID.get(i).substring(0, 4) + "\tPercent\t" + (surplusTS[i]/ts)*100 + "\tvolume%\t" + (brokerTxDrBalAllTS[i]/brokerTxDrAllTS[i])*100);
-				output.println(brokerID.get(i).substring(0, 4)+","+(surplusTS[i]/ts)*100 + ","+(brokerTxDrBalAllTS[i]/brokerTxDrAllTS[i])*100);
+				System.out.println(brokerID.get(i).substring(0, 4) + "\tPercent\t" + (surplusTS[i]/ts)*100 + "\tvolume%\t" + (brokerTxDrBalAllTS[i]/brokerTxDrAllTS[0][i])*100);
+				output.println(brokerID.get(i).substring(0, 4)+","+(surplusTS[i]/ts)*100 + ","+(brokerTxDrBalAllTS[i]/brokerTxDrAllTS[0][i])*100);
 			}
 			
 			System.out.println("\nZero Imbalance How Many Times? i.e. Zero customers");
-			output.println("\nZero Imbalance How Many Times?");
+			output.println("\nZero Imbalance How Many Times? i.e. Zero customers");
 			output.println("Broker,%");
 			for(int i = 0; i < n-1; i++){
 				System.out.println(brokerID.get(i).substring(0, 4) + "\tPercent\t" + (zeroTS[i]/ts)*100);

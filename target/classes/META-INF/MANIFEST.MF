@@ -1,13 +1,13 @@
 Manifest-Version: 1.0
-Built-By: mchowdhury4
-Build-Jdk: 10.0.2
-Specification-Title: powertac-logtool-examples
-Specification-Version: 1.5.1-SNAPSHOT
-Specification-Vendor: Power TAC
 Implementation-Title: powertac-logtool-examples
 Implementation-Version: 1.5.1-SNAPSHOT
+Built-By: Porag
+Specification-Vendor: Power TAC
+Specification-Title: powertac-logtool-examples
 Implementation-Vendor-Id: org.powertac
-Implementation-Vendor: Power TAC
+Build-Jdk: 1.8.0_171
+Specification-Version: 1.5.1-SNAPSHOT
 Implementation-URL: http://www.powertac.org
 Created-By: Maven Integration for Eclipse
+Implementation-Vendor: Power TAC
 
